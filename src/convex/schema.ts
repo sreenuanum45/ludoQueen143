@@ -95,11 +95,12 @@ const schema = defineSchema(
       createdAt: v.number(),
     }).index("by_game_to", ["gameId", "toUserId"]),
 
-    // Mute state per user per room (peer broadcast cheaply via subscription).
+    // Voice state per user per room (peers discover who is in voice + mute state).
     voiceState: defineTable({
       gameId: v.id("games"),
       userId: v.id("users"),
       muted: v.boolean(),
+      active: v.optional(v.boolean()), // true = currently in the voice call
       updatedAt: v.number(),
     })
       .index("by_game", ["gameId"])

@@ -86,6 +86,7 @@ export function safeCellsForSeat(seat: number, seats: number): Set<number> {
 /**
  * Is a capture allowed if `mover` lands on `target`'s cell?
  * Safe cells (own start, star offsets) block captures for everyone.
+ * Teammates (same team) never capture each other.
  * Home column cells can never be captured (not on ring).
  */
 export function canCapture(
@@ -93,8 +94,10 @@ export function canCapture(
   targetSeat: number,
   cell: number,
   seats: number,
+  teamMode = false,
 ): boolean {
   if (moverSeat === targetSeat) return false; // own tokens stack instead
+  if (teamMode && isTeammate(moverSeat, targetSeat, teamMode)) return false;
   const safe = safeCellsForSeat(moverSeat, seats);
   if (safe.has(cell)) return false;
   // star cell of the target seat also protects the target
@@ -121,10 +124,13 @@ export function legalMoves(
   seat: number,
   seats: number,
   occupiedBy: Map<number, { seat: number; token: number }[]>, // absCell -> occupants
+  teamMode = false,
 ): number[] {
   const moves: number[] = [];
   for (let t = 0; t < TOKENS_PER_PLAYER; t++) {
-    if (tokenCanMove(tokens[t], dice, seat, seats, occupiedBy).legal) {
+    if (
+      tokenCanMove(tokens[t], dice, seat, seats, occupiedBy, teamMode).legal
+    ) {
       moves.push(t);
     }
   }
@@ -138,6 +144,7 @@ export function tokenCanMove(
   seat: number,
   seats: number,
   occupiedBy: Map<number, { seat: number; token: number }[]>,
+  teamMode = false,
 ): MoveOutcome {
   if (progress === PATH_LEN - 1) {
     return { legal: false, reason: "Finished", from: progress, to: progress };
@@ -181,7 +188,7 @@ export function tokenCanMove(
   // own token already there: allowed (stack), no capture
   const enemy = occupants.find((o) => o.seat !== seat);
   if (enemy) {
-    const cap = canCapture(seat, enemy.seat, absTo, seats);
+    const cap = canCapture(seat, enemy.seat, absTo, seats, teamMode);
     if (!cap) {
       return {
         legal: false,
