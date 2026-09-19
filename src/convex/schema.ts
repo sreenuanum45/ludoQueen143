@@ -36,7 +36,7 @@ const schema = defineSchema(
 
     // ===== Ludo game =====
 
-    // A game room. Board geometry derives from players.length (2/3/4, 6, 8, 12).
+    // A game room. Board geometry derives from players.length (6, 8, 12).
     games: defineTable({
       code: v.string(), // 5-char join code, unique
       hostId: v.id("users"),
@@ -46,8 +46,10 @@ const schema = defineSchema(
         v.literal("finished"),
       ),
       teamMode: v.boolean(), // pair adjacent seats into teams
+      maxSeats: v.number(), // 6 | 8 | 12 — seat count and board size
       turnSeat: v.optional(v.number()), // seat index whose turn it is
       dice: v.optional(v.number()), // last dice roll (1..6)
+      awaitingMove: v.optional(v.boolean()), // true after a roll, until a token is moved
       turnStartedAt: v.optional(v.number()),
       winnerSeats: v.optional(v.array(v.number())), // finish order
       createdAt: v.number(),
@@ -68,7 +70,8 @@ const schema = defineSchema(
       lastSeenAt: v.number(),
     })
       .index("by_game", ["gameId"])
-      .index("by_game_user", ["gameId", "userId"]),
+      .index("by_game_user", ["gameId", "userId"])
+      .index("by_user", ["userId"]), // "my recent rooms" on the dashboard
 
     // Room chat + direct messages (DMs scoped by a sorted userId pair key).
     gameMessages: defineTable({
